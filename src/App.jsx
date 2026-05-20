@@ -597,7 +597,7 @@ export default function App() {
       montSansDate:t.filter(x=>x.statut==="sans_date").reduce((s,x)=>s+x.montant,0),
       nbImpaye:    t.filter(x=>x.statut==="impaye").length,
       montImpaye:  t.filter(x=>x.statut==="impaye").reduce((s,x)=>s+x.montant,0),
-      nbSolde:     t.filter(x=>["solde","encaisse"].includes(x.statut)).length,
+      nbSolde:     t.filter(x=>["solde","encaisse"].includes(x.statut) && daysUntil(x.dateEcheance) >= -30).length,
       prochains7:  t.filter(x=>activeStatuts.includes(x.statut) && daysUntil(x.dateEcheance)<=7 && daysUntil(x.dateEcheance)>=0),
       prochains30: t.filter(x=>activeStatuts.includes(x.statut) && daysUntil(x.dateEcheance)<=30 && daysUntil(x.dateEcheance)>7),
       depasses:    t.filter(x=>activeStatuts.includes(x.statut) && daysUntil(x.dateEcheance)<0),
@@ -645,11 +645,11 @@ export default function App() {
   /* Tab titres views */
   const getTabTitres = () => {
     let list = filtered;
-    if (tab==="recus")   list = list.filter(t=>t.sens==="recu");
-    if (tab==="emis")    list = list.filter(t=>t.sens==="emis");
+    if (tab==="recus")   list = list.filter(t=>t.sens==="recu" && !["solde","encaisse"].includes(t.statut));
+    if (tab==="emis")    list = list.filter(t=>t.sens==="emis" && !["solde","encaisse"].includes(t.statut));
     if (tab==="attente") list = list.filter(t=>t.statut==="en_attente");
     if (tab==="impayes") list = list.filter(t=>t.statut==="impaye");
-    if (tab==="soldes")  list = list.filter(t=>["solde","encaisse"].includes(t.statut));
+    if (tab==="soldes")  list = list.filter(t=>["solde","encaisse"].includes(t.statut) && daysUntil(t.dateEcheance) >= -30);
     return list;
   };
 
@@ -737,7 +737,7 @@ export default function App() {
                 <div style={{ fontSize:"12px", color:TEXT_MUT }}>{stats.nbImpaye} titre(s)</div>
               </div>
               <div style={s.kpiCard(SUCCESS_C)}>
-                <div style={s.kpiLabel}>✅ Soldés / Encaissés</div>
+                <div style={s.kpiLabel}>✅ Soldés / Encaissés (30j)</div>
                 <div style={{...s.kpiNum, color:"#0A5C36"}}>{stats.nbSolde} titre(s)</div>
               </div>
               <div style={s.kpiCard("#6F42C1")}>
@@ -804,7 +804,7 @@ export default function App() {
                 {tab==="emis"&&"📤 Titres émis (Fournisseurs)"}
                 {tab==="attente"&&"⏳ En attente"}
                 {tab==="impayes"&&"🚨 Impayés"}
-                {tab==="soldes"&&"✅ Soldés / Encaissés"}
+                {tab==="soldes"&&"✅ Soldés / Encaissés (30 derniers jours)"}
                 {tab==="tous"&&"📋 Tous les titres"}
               </div>
               <div style={{ display:"flex", gap:"8px" }}>
