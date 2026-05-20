@@ -583,8 +583,8 @@ export default function App() {
     const t = data.titres;
     const activeStatuts = includeGarantieSansDate ? ["en_attente","garantie","sans_date"] : ["en_attente"];
     return {
-      totalRecu:   t.filter(x=>x.sens==="recu").reduce((s,x)=>s+x.montant,0),
-      totalEmis:   t.filter(x=>x.sens==="emis").reduce((s,x)=>s+x.montant,0),
+      totalRecu:   t.filter(x=>x.sens==="recu" && !["solde","encaisse"].includes(x.statut)).reduce((s,x)=>s+x.montant,0),
+      totalEmis:   t.filter(x=>x.sens==="emis" && !["solde","encaisse"].includes(x.statut)).reduce((s,x)=>s+x.montant,0),
       nbAttente:   t.filter(x=>x.statut==="en_attente").length,
       montAttente: t.filter(x=>x.statut==="en_attente").reduce((s,x)=>s+x.montant,0),
       nbGarantie:  t.filter(x=>x.statut==="garantie").length,
@@ -698,14 +698,14 @@ export default function App() {
             </div>
             <div style={s.kpiGrid}>
               <div style={s.kpiCard(GOLD)}>
-                <div style={s.kpiLabel}>📥 Total reçus (clients)</div>
+                <div style={s.kpiLabel}>📥 Reçus actifs (hors soldés)</div>
                 <div style={{...s.kpiNum, color:"#1A5276"}}>{fmt(stats.totalRecu)}</div>
-                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{data.titres.filter(x=>x.sens==="recu").length} titre(s)</div>
+                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{data.titres.filter(x=>x.sens==="recu" && !["solde","encaisse"].includes(x.statut)).length} titre(s)</div>
               </div>
               <div style={s.kpiCard("#0D6EFD")}>
-                <div style={s.kpiLabel}>📤 Total émis (fournisseurs)</div>
+                <div style={s.kpiLabel}>📤 Émis actifs (hors soldés)</div>
                 <div style={{...s.kpiNum, color:"#0D2137"}}>{fmt(stats.totalEmis)}</div>
-                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{data.titres.filter(x=>x.sens==="emis").length} titre(s)</div>
+                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{data.titres.filter(x=>x.sens==="emis" && !["solde","encaisse"].includes(x.statut)).length} titre(s)</div>
               </div>
               <div style={s.kpiCard(WARN_C)}>
                 <div style={s.kpiLabel}>⏳ En attente{includeGarantieSansDate ? " + Garantie/Sans date" : ""}</div>
