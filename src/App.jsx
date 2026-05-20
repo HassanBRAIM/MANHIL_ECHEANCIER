@@ -587,6 +587,10 @@ export default function App() {
       totalEmis:   t.filter(x=>x.sens==="emis" && !["solde","encaisse"].includes(x.statut)).reduce((s,x)=>s+x.montant,0),
       nbAttente:   t.filter(x=>x.statut==="en_attente").length,
       montAttente: t.filter(x=>x.statut==="en_attente").reduce((s,x)=>s+x.montant,0),
+      nbAttenteRecu:  t.filter(x=>activeStatuts.includes(x.statut) && x.sens==="recu").length,
+      montAttenteRecu:t.filter(x=>activeStatuts.includes(x.statut) && x.sens==="recu").reduce((s,x)=>s+x.montant,0),
+      nbAttenteEmis:  t.filter(x=>activeStatuts.includes(x.statut) && x.sens==="emis").length,
+      montAttenteEmis:t.filter(x=>activeStatuts.includes(x.statut) && x.sens==="emis").reduce((s,x)=>s+x.montant,0),
       nbGarantie:  t.filter(x=>x.statut==="garantie").length,
       montGarantie:t.filter(x=>x.statut==="garantie").reduce((s,x)=>s+x.montant,0),
       nbSansDate:  t.filter(x=>x.statut==="sans_date").length,
@@ -708,9 +712,14 @@ export default function App() {
                 <div style={{ fontSize:"12px", color:TEXT_MUT }}>{data.titres.filter(x=>x.sens==="emis" && !["solde","encaisse"].includes(x.statut)).length} titre(s)</div>
               </div>
               <div style={s.kpiCard(WARN_C)}>
-                <div style={s.kpiLabel}>⏳ En attente{includeGarantieSansDate ? " + Garantie/Sans date" : ""}</div>
-                <div style={{...s.kpiNum, color:"#856404"}}>{fmt(includeGarantieSansDate ? stats.montAttente + stats.montGarantie + stats.montSansDate : stats.montAttente)}</div>
-                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{includeGarantieSansDate ? stats.nbAttente + stats.nbGarantie + stats.nbSansDate : stats.nbAttente} titre(s)</div>
+                <div style={s.kpiLabel}>⏳ En attente — 📥 Reçus{includeGarantieSansDate ? " + Garantie/Sans date" : ""}</div>
+                <div style={{...s.kpiNum, color:"#856404"}}>{fmt(stats.montAttenteRecu)}</div>
+                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{stats.nbAttenteRecu} titre(s)</div>
+              </div>
+              <div style={s.kpiCard("#E6A817")}>
+                <div style={s.kpiLabel}>⏳ En attente — 📤 Émis{includeGarantieSansDate ? " + Garantie/Sans date" : ""}</div>
+                <div style={{...s.kpiNum, color:"#856404"}}>{fmt(stats.montAttenteEmis)}</div>
+                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{stats.nbAttenteEmis} titre(s)</div>
               </div>
               <div style={s.kpiCard("#1A5276")}>
                 <div style={s.kpiLabel}>🔒 Garantie</div>
