@@ -93,6 +93,8 @@ function StatusBadge({ statut }) {
     encaisse:  { bg:"#D4EDDA", col:"#0A5C36", label:"💰 Encaissé" },
     solde:     { bg:"#C6F6D5", col:"#22543D", label:"✅ Soldé" },
     impaye:    { bg:"#F8D7DA", col:"#842029", label:"🚨 Impayé" },
+    garantie:  { bg:"#D6EAF8", col:"#1A5276", label:"🔒 Garantie" },
+    sans_date: { bg:"#FDEBD0", col:"#935116", label:"📅 Sans date" },
   };
   const m = map[statut] || map.en_attente;
   return <span style={{ background:m.bg, color:m.col, padding:"3px 10px", borderRadius:"10px", fontSize:"11px", fontWeight:600, whiteSpace:"nowrap" }}>{m.label}</span>;
@@ -133,6 +135,8 @@ function FilterBar({ filters, setF, data, showSens=true }) {
             <option value="encaisse">Encaissé</option>
             <option value="solde">Soldé</option>
             <option value="impaye">Impayé</option>
+            <option value="garantie">Garantie</option>
+            <option value="sans_date">Sans date</option>
           </select>
         </div>
         <div>
@@ -262,11 +266,14 @@ function TitresTable({ titres, data, onEdit, onDelete, onStatut, showSens=true }
               <td style={s.td(false)}>
                 <div style={{ display:"flex", gap:"4px", flexWrap:"nowrap" }}>
                   <button style={s.btn("#0D2137")} onClick={()=>onEdit(t)} title="Modifier">✏️</button>
-                  {t.statut === "en_attente" && <>
+                  {["en_attente","garantie","sans_date"].includes(t.statut) && <>
                     <button style={s.btn(SUCCESS_C)} onClick={()=>onStatut(t.id, t.sens==="recu"?"encaisse":"solde")} title={t.sens==="recu"?"Marquer encaissé":"Marquer soldé"}>✅</button>
                     <button style={s.btn(DANGER_C)} onClick={()=>onStatut(t.id,"impaye")} title="Marquer impayé">🚨</button>
                   </>}
                   {(t.statut==="impaye"||t.statut==="encaisse"||t.statut==="solde") &&
+                    <button style={s.btn(WARN_C)} onClick={()=>onStatut(t.id,"en_attente")} title="Remettre en attente">↩️</button>
+                  }
+                  {["garantie","sans_date"].includes(t.statut) &&
                     <button style={s.btn(WARN_C)} onClick={()=>onStatut(t.id,"en_attente")} title="Remettre en attente">↩️</button>
                   }
                   <button style={s.btn(DANGER_C)} onClick={()=>onDelete(t.id)} title="Supprimer">🗑️</button>
@@ -380,6 +387,8 @@ function TitreModal({ mode, initial, data, onSave, onClose }) {
                 <option value="encaisse">Encaissé</option>
                 <option value="solde">Soldé</option>
                 <option value="impaye">Impayé</option>
+                <option value="garantie">Garantie</option>
+                <option value="sans_date">Sans date</option>
               </select>
             </div>
             <div style={{ gridColumn:"1/-1" }}>
@@ -519,6 +528,7 @@ export default function App() {
   const [modal, setModal] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [dbError, setDbError] = useState(null);
+  const [includeGarantieSansDate, setIncludeGarantieSansDate] = useState(false);
 
   /* ── Load from Supabase ───────────────── */
   const loadFromServer = async () => {
@@ -571,19 +581,24 @@ export default function App() {
   const stats = useMemo(() => {
     if (!data) return {};
     const t = data.titres;
+    const activeStatuts = includeGarantieSansDate ? ["en_attente","garantie","sans_date"] : ["en_attente"];
     return {
       totalRecu:   t.filter(x=>x.sens==="recu").reduce((s,x)=>s+x.montant,0),
       totalEmis:   t.filter(x=>x.sens==="emis").reduce((s,x)=>s+x.montant,0),
       nbAttente:   t.filter(x=>x.statut==="en_attente").length,
       montAttente: t.filter(x=>x.statut==="en_attente").reduce((s,x)=>s+x.montant,0),
+      nbGarantie:  t.filter(x=>x.statut==="garantie").length,
+      montGarantie:t.filter(x=>x.statut==="garantie").reduce((s,x)=>s+x.montant,0),
+      nbSansDate:  t.filter(x=>x.statut==="sans_date").length,
+      montSansDate:t.filter(x=>x.statut==="sans_date").reduce((s,x)=>s+x.montant,0),
       nbImpaye:    t.filter(x=>x.statut==="impaye").length,
       montImpaye:  t.filter(x=>x.statut==="impaye").reduce((s,x)=>s+x.montant,0),
       nbSolde:     t.filter(x=>["solde","encaisse"].includes(x.statut)).length,
-      prochains7:  t.filter(x=>x.statut==="en_attente" && daysUntil(x.dateEcheance)<=7 && daysUntil(x.dateEcheance)>=0),
-      prochains30: t.filter(x=>x.statut==="en_attente" && daysUntil(x.dateEcheance)<=30 && daysUntil(x.dateEcheance)>7),
-      depasses:    t.filter(x=>x.statut==="en_attente" && daysUntil(x.dateEcheance)<0),
+      prochains7:  t.filter(x=>activeStatuts.includes(x.statut) && daysUntil(x.dateEcheance)<=7 && daysUntil(x.dateEcheance)>=0),
+      prochains30: t.filter(x=>activeStatuts.includes(x.statut) && daysUntil(x.dateEcheance)<=30 && daysUntil(x.dateEcheance)>7),
+      depasses:    t.filter(x=>activeStatuts.includes(x.statut) && daysUntil(x.dateEcheance)<0),
     };
-  }, [data]);
+  }, [data, includeGarantieSansDate]);
 
   if (!loaded) return <div style={{ background:LIGHT_BG, height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", color:TEXT_MUT }}>Chargement...</div>;
 
@@ -675,6 +690,12 @@ export default function App() {
         {/* ── DASHBOARD ──────────────────── */}
         {tab==="dashboard" && (
           <div>
+            <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"12px", padding:"10px 16px", background:CARD_BG, borderRadius:"8px", border:`1px solid ${BORDER}`, fontSize:"13px" }}>
+              <label style={{ display:"flex", alignItems:"center", gap:"8px", cursor:"pointer", userSelect:"none" }}>
+                <input type="checkbox" checked={includeGarantieSansDate} onChange={e=>setIncludeGarantieSansDate(e.target.checked)} style={{ width:"16px", height:"16px", cursor:"pointer", accentColor:NAV_BG }} />
+                <span>Inclure les chèques <b>Garantie</b> et <b>Sans date</b> dans le solde « En attente » et les alertes d'échéance</span>
+              </label>
+            </div>
             <div style={s.kpiGrid}>
               <div style={s.kpiCard(GOLD)}>
                 <div style={s.kpiLabel}>📥 Total reçus (clients)</div>
@@ -687,9 +708,19 @@ export default function App() {
                 <div style={{ fontSize:"12px", color:TEXT_MUT }}>{data.titres.filter(x=>x.sens==="emis").length} titre(s)</div>
               </div>
               <div style={s.kpiCard(WARN_C)}>
-                <div style={s.kpiLabel}>⏳ En attente</div>
-                <div style={{...s.kpiNum, color:"#856404"}}>{fmt(stats.montAttente)}</div>
-                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{stats.nbAttente} titre(s)</div>
+                <div style={s.kpiLabel}>⏳ En attente{includeGarantieSansDate ? " + Garantie/Sans date" : ""}</div>
+                <div style={{...s.kpiNum, color:"#856404"}}>{fmt(includeGarantieSansDate ? stats.montAttente + stats.montGarantie + stats.montSansDate : stats.montAttente)}</div>
+                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{includeGarantieSansDate ? stats.nbAttente + stats.nbGarantie + stats.nbSansDate : stats.nbAttente} titre(s)</div>
+              </div>
+              <div style={s.kpiCard("#1A5276")}>
+                <div style={s.kpiLabel}>🔒 Garantie</div>
+                <div style={{...s.kpiNum, color:"#0D2137"}}>{fmt(stats.montGarantie)}</div>
+                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{stats.nbGarantie} titre(s)</div>
+              </div>
+              <div style={s.kpiCard("#935116")}>
+                <div style={s.kpiLabel}>📅 Sans date</div>
+                <div style={{...s.kpiNum, color:"#6B3A0A"}}>{fmt(stats.montSansDate)}</div>
+                <div style={{ fontSize:"12px", color:TEXT_MUT }}>{stats.nbSansDate} titre(s)</div>
               </div>
               <div style={s.kpiCard(DANGER_C)}>
                 <div style={s.kpiLabel}>🚨 Impayés</div>

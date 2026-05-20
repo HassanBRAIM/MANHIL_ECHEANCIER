@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS titres (
   date_echeance DATE NOT NULL,
   tierce TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
   banque TEXT NOT NULL REFERENCES banques(id) ON DELETE RESTRICT,
-  statut TEXT NOT NULL DEFAULT 'en_attente' CHECK (statut IN ('en_attente', 'encaisse', 'solde', 'impaye')),
+  statut TEXT NOT NULL DEFAULT 'en_attente' CHECK (statut IN ('en_attente', 'encaisse', 'solde', 'impaye', 'garantie', 'sans_date')),
   notes TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
