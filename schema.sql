@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS titres (
   montant NUMERIC(12,2) NOT NULL DEFAULT 0,
   date_emission DATE,
   date_echeance DATE NOT NULL,
-  tierce TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  tierce TEXT NOT NULL,
   banque TEXT NOT NULL REFERENCES banques(id) ON DELETE RESTRICT,
   statut TEXT NOT NULL DEFAULT 'en_attente' CHECK (statut IN ('en_attente', 'encaisse', 'solde', 'impaye', 'garantie', 'sans_date')),
   notes TEXT DEFAULT '',
